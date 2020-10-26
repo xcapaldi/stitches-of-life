@@ -54,6 +54,59 @@ class App:
             self.on_render()
         self.on_cleanup()
 
+# we have two spaces
+# screen space
+# and world space
+# world space is purely a collection of data in the world
+
+class Stitch:
+    stitches = {}
+    def __init__(self, x, y):
+        self.position = (x, y)
+        self.alive = False
+        # list of neighbors
+        # originally I tracked each neighbor but that isn't required
+        self.neighbors = [] # (x1, y1), (x2, y2)
+        self.live_neighbors = 0
+        # add stitch to dictionary of stitches in class
+        # can lookup by position and get that object in return
+        Stitch.stitches[self.position] = self
+
+    def check_neighbors(self):
+        for neighbor in self.neighbors:
+            if stitches[neighbor].alive:
+                self.live_neighbors += 1
+
+    def propogate(self):
+        if self.live_neighbors == 3:
+            self.alive = True
+            print
+
+    def live_or_die(self):
+        if self.live_neighbors < 2:
+            self.alive = False
+            print(f"{self.position} died from solitude")
+        elif self.live_neighbors > 3:
+            self.alive = False
+            print(f"{self.position} died from overcrowding")
+        else:
+            pass
+
+    def progress(self):
+        if self.alive:
+            self.live_or_die()
+        else:
+            self.propogate()
+
+    def delete(self):
+        del Stitch.stitches[self.position]
+        
+
+        
+                
+
+        
+        
 if __name__ == "__main__":
     myApp = App()
     myApp.on_execute()
