@@ -25,6 +25,9 @@ class App:
         self.screen = pygame.display.set_mode(self.size) #self.flags
         self.screen.fill((255, 255, 255))
         self.running = True
+        for i in range(100):
+            Stitch(i*10, i+20)
+        print(Stitch.stitches)
 
     def on_event(self, event):
         if event.type == pygame.QUIT:
@@ -34,10 +37,8 @@ class App:
         pass
 
     def on_render(self):
-        pygame.draw.rect(self.screen, (255, 0, 0), (10,10,100,100))
-        pygame.draw.rect(self.screen, (0, 255, 0), (150,10,100,100))
-        pygame.draw.rect(self.screen, (0, 0, 255), (50, 150,100,100))
-        pygame.draw.rect(self.screen, (100, 150, 0), (300, 300, 100,100))
+        for stitch in list(Stitch.stitches.values()):
+            stitch.render(self)
         pygame.display.update()
 
     def on_cleanup(self):
@@ -66,13 +67,17 @@ class Stitch:
         self.alive = False
         # list of neighbors
         # originally I tracked each neighbor but that isn't required
+        # I can't simply calculate neighbors by position since
+        # some neighbors won't fall adjacent on the cartesian grid
         self.neighbors = [] # (x1, y1), (x2, y2)
-        self.live_neighbors = 0
+        # this could also hold reference to actual neighbor objects but I
+        # think that is less computationally efficient when it comes time to calculate neighbors
         # add stitch to dictionary of stitches in class
         # can lookup by position and get that object in return
         Stitch.stitches[self.position] = self
 
     def check_neighbors(self):
+        self.live_neighbors = 0
         for neighbor in self.neighbors:
             if stitches[neighbor].alive:
                 self.live_neighbors += 1
@@ -101,11 +106,15 @@ class Stitch:
     def delete(self):
         del Stitch.stitches[self.position]
         
+    def render(self, app):
+        """
+        Provide app object to this function so it can render to the active screen.
+        """
 
-        
-                
-
-        
+        # make the rectangle call more clear
+        x, y = self.position 
+        (x, y, width, height)
+        pygame.draw.rect(app.screen, (255, 0, 0), (x, y, 10, 10))
         
 if __name__ == "__main__":
     myApp = App()
