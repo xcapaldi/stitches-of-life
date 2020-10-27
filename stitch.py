@@ -25,8 +25,9 @@ class App:
         self.screen = pygame.display.set_mode(self.size) #self.flags
         self.screen.fill((255, 255, 255))
         self.running = True
-        for i in range(100):
-            Stitch(i*10, i+20)
+            
+        for i in range(10):
+            Stitch(i*100, i*20)
         print(Stitch.stitches)
 
     def on_event(self, event):
@@ -76,6 +77,32 @@ class Stitch:
         # can lookup by position and get that object in return
         Stitch.stitches[self.position] = self
 
+    def find_neighbors(self):
+       """
+       Find all simple neighboring stitches.
+
+         x ->
+       y v v v v v
+       | v n n n v
+       V v n V n v
+         v n n n v
+         v v v v v
+       
+       Note that this isn't always the case at boundaries but we will leave that logic for later.
+       """
+       x, y = self.position
+
+       for i in range(3):
+           for j in range(3):
+               try:
+                   self.neighbors.append(self.stitches[(x - 1 + i, y - 1 + j)].position)
+               except:
+                   pass
+
+       # this cell will be added by default so we must delete at the end
+       self.neighbors.remove(self.position)
+       
+
     def check_neighbors(self):
         self.live_neighbors = 0
         for neighbor in self.neighbors:
@@ -113,8 +140,8 @@ class Stitch:
 
         # make the rectangle call more clear
         x, y = self.position 
-        (x, y, width, height)
-        pygame.draw.rect(app.screen, (255, 0, 0), (x, y, 10, 10))
+        # (x, y, width, height)
+        pygame.draw.rect(app.screen, (0, 0, 0), (x, y, 10, 10))
         
 if __name__ == "__main__":
     myApp = App()
