@@ -12,12 +12,43 @@ Maybe we will allow the user to define this.
 
 
 import pygame
+import random as rnd
+import time
 
+def test_full_setup(n):
+    """Simple function to generate full grid of cells."""
+    for x in range(n):
+        for y in range(n):
+            Stitch(x,y)
+            Stitch.stitches[(x,y)].alive = True if round(rnd.random()) == 1 else False
+
+def test_glider():
+    """Generate a glider."""
+    for x in range(100):
+        for y in range(100):
+            Stitch(x,y)
+
+    Stitch.stitches[(11,12)].alive = True
+    Stitch.stitches[(12,13)].alive = True
+    Stitch.stitches[(13,11)].alive = True
+    Stitch.stitches[(13,12)].alive = True
+    Stitch.stitches[(13,13)].alive = True
+    
+def test_blinker():
+    """Generate a blinker."""
+    for x in range(100):
+        for y in range(100):
+            Stitch(x,y)
+
+    Stitch.stitches[(10,10)].alive = True
+    Stitch.stitches[(11,10)].alive = True
+    Stitch.stitches[(12,10)].alive = True
+        
 class App:
     def __init__(self):
         self.running = True
         self.screen = None
-        self.size = self.width, self.height = 640,400
+        self.size = self.width, self.height = 1000, 1000
         self.flags = None
 
     def on_init(self):
@@ -26,22 +57,32 @@ class App:
         self.screen.fill((255, 255, 255))
         self.running = True
             
-        for i in range(10):
-            Stitch(i*100, i*20)
-        print(Stitch.stitches)
+        test_full_setup(100)
+        for stitch in list(Stitch.stitches.values()):
+            stitch.find_neighbors()
+            stitch.render(self)
+        pygame.display.update()
 
     def on_event(self, event):
         if event.type == pygame.QUIT:
             self.running = False
 
     def on_loop(self):
-        pass
+        for stitch in list(Stitch.stitches.values()):
+            stitch.check_neighbors()
+            stitch.progress()
+        #time.sleep(0.25)
 
     def on_render(self):
+        self.screen.fill((255, 255, 255))
         for stitch in list(Stitch.stitches.values()):
             stitch.render(self)
         pygame.display.update()
 
+    def on_cycle(self):
+        for stitch in list(Stitch.stitches.values()):
+            stitch.cycle()
+            
     def on_cleanup(self):
         pygame.quit()
 
@@ -54,6 +95,7 @@ class App:
                 self.on_event(event)
             self.on_loop()
             self.on_render()
+            self.on_cycle()
         self.on_cleanup()
 
 # we have two spaces
@@ -65,7 +107,9 @@ class Stitch:
     stitches = {}
     def __init__(self, x, y):
         self.position = (x, y)
+        # this will hold the current state and the state for the next time step
         self.alive = False
+        self.vital = False
         # list of neighbors
         # originally I tracked each neighbor but that isn't required
         # I can't simply calculate neighbors by position since
@@ -106,29 +150,32 @@ class Stitch:
     def check_neighbors(self):
         self.live_neighbors = 0
         for neighbor in self.neighbors:
-            if stitches[neighbor].alive:
+            if self.stitches[neighbor].alive:
                 self.live_neighbors += 1
 
     def propogate(self):
         if self.live_neighbors == 3:
-            self.alive = True
-            print
+            self.vital = True
 
     def live_or_die(self):
+        # die from solitude
         if self.live_neighbors < 2:
-            self.alive = False
-            print(f"{self.position} died from solitude")
+            self.vital = False
+        # die from overcrowding
         elif self.live_neighbors > 3:
-            self.alive = False
-            print(f"{self.position} died from overcrowding")
+            self.vital = False
+        # survive
         else:
-            pass
+            self.vital = True
 
     def progress(self):
         if self.alive:
             self.live_or_die()
         else:
             self.propogate()
+
+    def cycle(self):
+        self.alive = self.vital
 
     def delete(self):
         del Stitch.stitches[self.position]
@@ -138,11 +185,15 @@ class Stitch:
         Provide app object to this function so it can render to the active screen.
         """
 
-        # make the rectangle call more clear
-        x, y = self.position 
-        # (x, y, width, height)
-        pygame.draw.rect(app.screen, (0, 0, 0), (x, y, 10, 10))
-        
+        if self.alive:
+            # make the rectangle call more clear
+            x, y = self.position 
+            # (x, y, width, height)
+            red = round(rnd.random()*255)
+            green = round(rnd.random()*255)
+            blue = round(rnd.random()*255)
+            pygame.draw.rect(app.screen, (red, green, blue), (x*10, y*10, 10, 10))
+      
 if __name__ == "__main__":
     myApp = App()
     myApp.on_execute()
