@@ -20,7 +20,7 @@ def test_full_setup(n):
     for x in range(n):
         for y in range(n):
             Stitch(x,y)
-            Stitch.stitches[(x,y)].alive = True if round(rnd.random()) == 1 else False
+            Stitch.stitches[(x,y)].vital = True if round(rnd.random()) == 1 else False
 
 def test_glider():
     """Generate a glider."""
@@ -60,8 +60,6 @@ class App:
         test_full_setup(100)
         for stitch in list(Stitch.stitches.values()):
             stitch.find_neighbors()
-            stitch.render(self)
-        pygame.display.update()
 
     def on_event(self, event):
         if event.type == pygame.QUIT:
@@ -69,9 +67,10 @@ class App:
 
     def on_loop(self):
         for stitch in list(Stitch.stitches.values()):
+            stitch.cycle
             stitch.check_neighbors()
             stitch.progress()
-        #time.sleep(0.25)
+        #time.sleep(0.1)
 
     def on_render(self):
         self.screen.fill((255, 255, 255))
@@ -192,7 +191,7 @@ class Stitch:
             red = round(rnd.random()*255)
             green = round(rnd.random()*255)
             blue = round(rnd.random()*255)
-            pygame.draw.rect(app.screen, (red, green, blue), (x*10, y*10, 10, 10))
+            pygame.draw.rect(app.screen, (0, 0, 0), (x*10, y*10, 10, 10))
       
 if __name__ == "__main__":
     myApp = App()
