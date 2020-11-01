@@ -50,6 +50,9 @@ class App:
         self.screen = None
         self.size = self.width, self.height = 1000, 1000
         self.flags = None
+        self.offset = (0, 0)
+        self.rmb = False
+        self.scale = 10
 
     def on_init(self):
         pygame.init()
@@ -64,7 +67,40 @@ class App:
     def on_event(self, event):
         if event.type == pygame.QUIT:
             self.running = False
-
+        elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            self.rmb = True
+            print(round(pygame.mouse.get_pos()[0]/self.scale), round(pygame.mouse.get_pos()[1]/self.scale))
+        elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+            self.rmb = False
+        elif event.type == pygame.MOUSEMOTION:
+            if self.rmb:
+                self.offset = (round(self.offset[0] - (event.rel[0]/self.scale)), round(self.offset[1] - (event.rel[1]/self.scale)))
+        elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 4:
+            # capture mouse position in world space
+            mouse_init = (round(pygame.mouse.get_pos()[0]/self.scale), round(pygame.mouse.get_pos()[1]/self.scale))
+            self.scale += 1
+            mouse_final = (round(pygame.mouse.get_pos()[0]/self.scale), round(pygame.mouse.get_pos()[1]/self.scale))
+            mouse_offset = (mouse_final[0]-mouse_init[0], mouse_final[1]-mouse_init[1])
+            self.offset = self.offset[0] - mouse_offset[0], self.offset[1] - mouse_offset[1]
+        elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 5:
+            try:
+                mouse_init = (round(pygame.mouse.get_pos()[0]/self.scale), round(pygame.mouse.get_pos()[1]/self.scale))
+                self.scale -= 1
+                mouse_final = (round(pygame.mouse.get_pos()[0]/self.scale), round(pygame.mouse.get_pos()[1]/self.scale))
+                mouse_offset = (mouse_final[0]-mouse_init[0], mouse_final[1]-mouse_init[1])
+                self.offset = self.offset[0] - mouse_offset[0], self.offset[1] - mouse_offset[1]
+            except ZeroDivisionError:
+                self.scale += 1
+        #elif event.type == pygame.KEYDOWN:
+            #if event.key == pygame.K_LEFT:
+                #self.offset = (self.offset[0]-1, self.offset[1])
+            #elif event.key == pygame.K_RIGHT:
+                #self.offset = (self.offset[0]+1, self.offset[1])
+            #elif event.key == pygame.K_UP:
+                #self.offset = (self.offset[0], self.offset[1]-1)
+            #elif event.key == pygame.K_DOWN:
+                #self.offset = (self.offset[0], self.offset[1]+1)
+                
     def on_loop(self):
         for stitch in list(Stitch.stitches.values()):
             stitch.cycle
@@ -75,7 +111,11 @@ class App:
     def on_render(self):
         self.screen.fill((255, 255, 255))
         for stitch in list(Stitch.stitches.values()):
-            stitch.render(self)
+            stitch.render(self, self.offset, self.scale)
+        #for x in range(100):
+        #    for y in range(100):
+                #pygame.draw.line(self.screen, (0,0,0), ((self.offset[0]-x)*self.scale,0), ((self.offset[0]-x)*self.scale,1000))
+                #pygame.draw.line(self.screen, (0,0,0), (0,(self.offset[1]-y)*self.scale), (1000,(self.offset[1]-y)*self.scale))
         pygame.display.update()
 
     def on_cycle(self):
@@ -179,19 +219,18 @@ class Stitch:
     def delete(self):
         del Stitch.stitches[self.position]
         
-    def render(self, app):
+    def render(self, app, offset, scale):
         """
         Provide app object to this function so it can render to the active screen.
+        offset is tuple of x,y offset between screen and world spaces.
         """
 
         if self.alive:
             # make the rectangle call more clear
             x, y = self.position 
+            x_off, y_off = offset
             # (x, y, width, height)
-            red = round(rnd.random()*255)
-            green = round(rnd.random()*255)
-            blue = round(rnd.random()*255)
-            pygame.draw.rect(app.screen, (0, 0, 0), (x*10, y*10, 10, 10))
+            pygame.draw.rect(app.screen, (0, 0, 0), ((x-x_off)*scale, (y-y_off)*scale, scale, scale))
       
 if __name__ == "__main__":
     myApp = App()
