@@ -59,6 +59,7 @@ class App:
         self.scale = 10
         self.phase = App.BOUNDARY_DRAWING
         self.boundary_points = []  # List of (x, y) tuples in world space
+        self.edge_mapping = {}  # Maps out-of-bounds positions to in-bounds wrapped positions
 
     def on_init(self):
         pygame.init()
@@ -149,6 +150,35 @@ class App:
             p1x, p1y = p2x, p2y
         return inside
 
+    def create_edge_links(self, min_x, max_x, min_y, max_y):
+        """
+        Automatically create edge links for toroidal topology.
+        This allows stitches at boundaries to find neighbors on opposite edges,
+        creating a continuous surface like a knitted cylinder or torus.
+        """
+        # For each position in the grid (including 1-cell padding),
+        # create mappings for positions that would wrap around edges
+
+        # Build a list of all valid stitch positions
+        valid_positions = set(Stitch.stitches.keys())
+
+        # For each position that might need wrapping, create the mapping
+        for x in range(min_x - 2, max_x + 3):
+            for y in range(min_y - 2, max_y + 3):
+                # Calculate wrapped position
+                # Map positions outside the boundary to opposite edge
+                width = max_x - min_x + 1
+                height = max_y - min_y + 1
+
+                wrapped_x = min_x + ((x - min_x) % width)
+                wrapped_y = min_y + ((y - min_y) % height)
+
+                # Only create mapping if the wrapped position exists and is different
+                if (wrapped_x, wrapped_y) in valid_positions and (x, y) != (wrapped_x, wrapped_y):
+                    self.edge_mapping[(x, y)] = (wrapped_x, wrapped_y)
+
+        print(f"Created {len(self.edge_mapping)} edge link mappings for toroidal topology")
+
     def start_simulation(self):
         """Initialize the simulation grid based on the drawn boundary."""
         # Find bounding box of boundary
@@ -168,9 +198,12 @@ class App:
                     if rnd.random() > 0.7:
                         Stitch.stitches[(x, y)].alive = True
 
-        # Find neighbors for all stitches
+        # Create automatic edge links for continuous topology
+        self.create_edge_links(min_x, max_x, min_y, max_y)
+
+        # Find neighbors for all stitches (now with edge links)
         for stitch in list(Stitch.stitches.values()):
-            stitch.find_neighbors()
+            stitch.find_neighbors(self.edge_mapping)
 
         # Switch to simulation phase
         self.phase = App.SIMULATION
@@ -259,7 +292,7 @@ class Stitch:
         # can lookup by position and get that object in return
         Stitch.stitches[self.position] = self
 
-    def find_neighbors(self):
+    def find_neighbors(self, edge_mapping=None):
        """
        Find all simple neighboring stitches.
 
@@ -270,29 +303,31 @@ class Stitch:
          v n n n v
          v v v v v
 
-       Note that this isn't always the case at boundaries but we will leave that logic for later.
+       With edge linking, stitches at boundaries can find neighbors on opposite edges,
+       creating a continuous topology (toroidal/cylindrical like knitted fabric).
 
-       TODO: Define proper boundary behavior for Game of Life.
-       Current placeholder approach: Cells outside the boundary don't exist and are treated
-       as always dead. This means boundary cells will have fewer neighbors.
-       Alternative approaches to consider:
-       - Wrap-around (toroidal topology)
-       - Mirror/reflect at boundaries
-       - Fixed boundary (always dead, current approach)
-       - Fixed boundary (always alive)
+       Args:
+           edge_mapping: Dict mapping out-of-bounds positions to wrapped in-bounds positions
        """
        x, y = self.position
+       edge_mapping = edge_mapping or {}
 
        for i in range(3):
            for j in range(3):
-               try:
-                   self.neighbors.append(self.stitches[(x - 1 + i, y - 1 + j)].position)
-               except:
-                   # Cell doesn't exist (outside boundary) - treat as dead (placeholder)
-                   pass
+               neighbor_pos = (x - 1 + i, y - 1 + j)
+
+               # Check if this position exists directly
+               if neighbor_pos in self.stitches:
+                   self.neighbors.append(neighbor_pos)
+               # Check if there's an edge mapping for this position
+               elif neighbor_pos in edge_mapping:
+                   wrapped_pos = edge_mapping[neighbor_pos]
+                   if wrapped_pos in self.stitches:
+                       self.neighbors.append(wrapped_pos)
 
        # this cell will be added by default so we must delete at the end
-       self.neighbors.remove(self.position)
+       if self.position in self.neighbors:
+           self.neighbors.remove(self.position)
        
 
     def check_neighbors(self):
