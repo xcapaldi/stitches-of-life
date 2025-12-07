@@ -45,6 +45,10 @@ def test_blinker():
     Stitch.stitches[(12,10)].alive = True
         
 class App:
+    # Phase constants
+    BOUNDARY_DRAWING = 0
+    SIMULATION = 1
+
     def __init__(self):
         self.running = True
         self.screen = None
@@ -53,29 +57,63 @@ class App:
         self.offset = (0, 0)
         self.rmb = False
         self.scale = 10
+        self.phase = App.BOUNDARY_DRAWING
+        self.boundary_points = []  # List of (x, y) tuples in world space
 
     def on_init(self):
         pygame.init()
         self.screen = pygame.display.set_mode(self.size) #self.flags
         self.screen.fill((255, 255, 255))
         self.running = True
-            
-        test_full_setup(100)
-        for stitch in list(Stitch.stitches.values()):
-            stitch.find_neighbors()
+        pygame.display.set_caption("Stitches of Life - Draw Boundary (Left Click: Add Point, SPACE: Complete & Start Simulation)")
+
+        # Don't initialize stitches yet - wait for boundary drawing phase to complete
+        # test_full_setup(100)
+        # for stitch in list(Stitch.stitches.values()):
+        #     stitch.find_neighbors()
 
     def on_event(self, event):
         if event.type == pygame.QUIT:
             self.running = False
-        elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+
+        # Phase-specific controls
+        if self.phase == App.BOUNDARY_DRAWING:
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                # Left click adds boundary point in world space
+                screen_x, screen_y = pygame.mouse.get_pos()
+                world_x = round(screen_x / self.scale + self.offset[0])
+                world_y = round(screen_y / self.scale + self.offset[1])
+                self.boundary_points.append((world_x, world_y))
+                print(f"Boundary point added: ({world_x}, {world_y})")
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+                # Complete boundary drawing and start simulation
+                if len(self.boundary_points) >= 3:
+                    print(f"Boundary complete with {len(self.boundary_points)} points. Starting simulation...")
+                    self.start_simulation()
+                else:
+                    print("Need at least 3 points to create a boundary")
+
+        elif self.phase == App.SIMULATION:
+            # Use right mouse button for panning during simulation
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                self.rmb = True
+            elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+                self.rmb = False
+            elif event.type == pygame.MOUSEMOTION:
+                if self.rmb:
+                    self.offset = (round(self.offset[0] - (event.rel[0]/self.scale)), round(self.offset[1] - (event.rel[1]/self.scale)))
+
+        # Panning with right mouse button (works in both phases)
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 3:
             self.rmb = True
-            print(round(pygame.mouse.get_pos()[0]/self.scale), round(pygame.mouse.get_pos()[1]/self.scale))
-        elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+        elif event.type == pygame.MOUSEBUTTONUP and event.button == 3:
             self.rmb = False
         elif event.type == pygame.MOUSEMOTION:
             if self.rmb:
                 self.offset = (round(self.offset[0] - (event.rel[0]/self.scale)), round(self.offset[1] - (event.rel[1]/self.scale)))
-        elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 4:
+
+        # Zooming (works in both phases)
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 4:
             # capture mouse position in world space
             mouse_init = (round(pygame.mouse.get_pos()[0]/self.scale), round(pygame.mouse.get_pos()[1]/self.scale))
             self.scale += 1
@@ -91,36 +129,97 @@ class App:
                 self.offset = self.offset[0] - mouse_offset[0], self.offset[1] - mouse_offset[1]
             except ZeroDivisionError:
                 self.scale += 1
-        #elif event.type == pygame.KEYDOWN:
-            #if event.key == pygame.K_LEFT:
-                #self.offset = (self.offset[0]-1, self.offset[1])
-            #elif event.key == pygame.K_RIGHT:
-                #self.offset = (self.offset[0]+1, self.offset[1])
-            #elif event.key == pygame.K_UP:
-                #self.offset = (self.offset[0], self.offset[1]-1)
-            #elif event.key == pygame.K_DOWN:
-                #self.offset = (self.offset[0], self.offset[1]+1)
-                
-    def on_loop(self):
+
+    def point_in_polygon(self, x, y, polygon):
+        """
+        Check if point (x, y) is inside polygon using ray casting algorithm.
+        """
+        n = len(polygon)
+        inside = False
+        p1x, p1y = polygon[0]
+        for i in range(1, n + 1):
+            p2x, p2y = polygon[i % n]
+            if y > min(p1y, p2y):
+                if y <= max(p1y, p2y):
+                    if x <= max(p1x, p2x):
+                        if p1y != p2y:
+                            xinters = (y - p1y) * (p2x - p1x) / (p2y - p1y) + p1x
+                        if p1x == p2x or x <= xinters:
+                            inside = not inside
+            p1x, p1y = p2x, p2y
+        return inside
+
+    def start_simulation(self):
+        """Initialize the simulation grid based on the drawn boundary."""
+        # Find bounding box of boundary
+        min_x = min(p[0] for p in self.boundary_points)
+        max_x = max(p[0] for p in self.boundary_points)
+        min_y = min(p[1] for p in self.boundary_points)
+        max_y = max(p[1] for p in self.boundary_points)
+
+        print(f"Creating grid from ({min_x}, {min_y}) to ({max_x}, {max_y})")
+
+        # Create stitches within the bounding box that are inside the boundary
+        for x in range(min_x - 1, max_x + 2):  # Add 1 cell padding
+            for y in range(min_y - 1, max_y + 2):
+                if self.point_in_polygon(x, y, self.boundary_points):
+                    Stitch(x, y)
+                    # Randomly initialize some cells as alive
+                    if rnd.random() > 0.7:
+                        Stitch.stitches[(x, y)].alive = True
+
+        # Find neighbors for all stitches
         for stitch in list(Stitch.stitches.values()):
-            stitch.cycle
-            stitch.check_neighbors()
-            stitch.progress()
-        #time.sleep(0.1)
+            stitch.find_neighbors()
+
+        # Switch to simulation phase
+        self.phase = App.SIMULATION
+        pygame.display.set_caption("Stitches of Life - Simulation Running")
+
+    def on_loop(self):
+        # Only run simulation during SIMULATION phase
+        if self.phase == App.SIMULATION:
+            for stitch in list(Stitch.stitches.values()):
+                stitch.cycle
+                stitch.check_neighbors()
+                stitch.progress()
+            #time.sleep(0.1)
 
     def on_render(self):
         self.screen.fill((255, 255, 255))
-        for stitch in list(Stitch.stitches.values()):
-            stitch.render(self, self.offset, self.scale)
-        #for x in range(100):
-        #    for y in range(100):
-                #pygame.draw.line(self.screen, (0,0,0), ((self.offset[0]-x)*self.scale,0), ((self.offset[0]-x)*self.scale,1000))
-                #pygame.draw.line(self.screen, (0,0,0), (0,(self.offset[1]-y)*self.scale), (1000,(self.offset[1]-y)*self.scale))
+
+        if self.phase == App.BOUNDARY_DRAWING:
+            # Draw boundary points and lines
+            if len(self.boundary_points) > 0:
+                # Convert world space to screen space and draw points
+                screen_points = []
+                for world_x, world_y in self.boundary_points:
+                    screen_x = (world_x - self.offset[0]) * self.scale
+                    screen_y = (world_y - self.offset[1]) * self.scale
+                    screen_points.append((screen_x, screen_y))
+                    # Draw point as a circle
+                    pygame.draw.circle(self.screen, (255, 0, 0), (int(screen_x), int(screen_y)), 5)
+
+                # Draw lines connecting points
+                if len(screen_points) > 1:
+                    pygame.draw.lines(self.screen, (0, 0, 255), False, screen_points, 2)
+
+                # Draw line from last point to first to show closed boundary
+                if len(screen_points) > 2:
+                    pygame.draw.line(self.screen, (0, 0, 255), screen_points[-1], screen_points[0], 2)
+
+        elif self.phase == App.SIMULATION:
+            # Draw stitches
+            for stitch in list(Stitch.stitches.values()):
+                stitch.render(self, self.offset, self.scale)
+
         pygame.display.update()
 
     def on_cycle(self):
-        for stitch in list(Stitch.stitches.values()):
-            stitch.cycle()
+        # Only cycle stitches during SIMULATION phase
+        if self.phase == App.SIMULATION:
+            for stitch in list(Stitch.stitches.values()):
+                stitch.cycle()
             
     def on_cleanup(self):
         pygame.quit()
@@ -170,8 +269,17 @@ class Stitch:
        V v n V n v
          v n n n v
          v v v v v
-       
+
        Note that this isn't always the case at boundaries but we will leave that logic for later.
+
+       TODO: Define proper boundary behavior for Game of Life.
+       Current placeholder approach: Cells outside the boundary don't exist and are treated
+       as always dead. This means boundary cells will have fewer neighbors.
+       Alternative approaches to consider:
+       - Wrap-around (toroidal topology)
+       - Mirror/reflect at boundaries
+       - Fixed boundary (always dead, current approach)
+       - Fixed boundary (always alive)
        """
        x, y = self.position
 
@@ -180,6 +288,7 @@ class Stitch:
                try:
                    self.neighbors.append(self.stitches[(x - 1 + i, y - 1 + j)].position)
                except:
+                   # Cell doesn't exist (outside boundary) - treat as dead (placeholder)
                    pass
 
        # this cell will be added by default so we must delete at the end
