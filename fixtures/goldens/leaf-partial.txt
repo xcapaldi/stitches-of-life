@@ -1,0 +1,16 @@
+case: leaf-partial
+pattern: leaf.json  rule: 110  seed: 0 (center)
+shaper: none  rows: 13  stitches: 149
+#.#####.#........    17 sts  row 12
+#,,##.###.....,,.    17 sts  row 11
+ #..#..##.......      15 sts  row 10
+ #VV#...#....,,.      15 sts  row 9
+  #.#####......        13 sts  row 8
+  #,,##.#...,,.        13 sts  row 7
+   #..###.....          11 sts  row 6
+   #,,.##..,,.          11 sts  row 5
+    #...#....             9 sts  row 4
+    #VV##.,,.             9 sts  row 3
+     ##.#...               7 sts  row 2
+     .VV#.,,               7 sts  row 1
+      ..#..                 5 sts  row 0

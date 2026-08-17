@@ -1,1 +1,3 @@
+# The stitchlife core and its tests need nothing beyond the standard library.
+# This is only for stitch.py, the original pygame prototype.
 pygame-ce>=2.5.0

@@ -1,0 +1,39 @@
+{
+  "name": "raglan front",
+  "castOn": 48,
+  "gauge": {
+    "stitchesPerCm": 2.2,
+    "rowsPerCm": 3.0
+  },
+  "rows": [
+    {
+      "count": 10,
+      "label": "hem"
+    },
+    {
+      "count": 12,
+      "every": 4,
+      "label": "waist shaping",
+      "shape": {
+        "kind": "dec",
+        "count": 1,
+        "at": "both"
+      }
+    },
+    {
+      "count": 8,
+      "label": "underarm"
+    },
+    {
+      "count": 20,
+      "every": 2,
+      "label": "raglan",
+      "shape": {
+        "kind": "dec",
+        "count": 1,
+        "at": "both"
+      }
+    }
+  ],
+  "bindOff": true
+}

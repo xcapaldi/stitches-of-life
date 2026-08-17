@@ -1,0 +1,38 @@
+case: leaf-rule110
+pattern: leaf.json  rule: 110  seed: 0 (center)
+shaper: none  rows: 35  stitches: 455
+       #.#..                   5 sts  row 34
+       #A#.`                   5 sts  row 33
+      #..#...                 7 sts  row 32
+      #A##.`.                 7 sts  row 31
+     ###.#....               9 sts  row 30
+     #`###..`.               9 sts  row 29
+    #.##.#.....            11 sts  row 28
+    #`.###...`.            11 sts  row 27
+   #.###.#......          13 sts  row 26
+   #A#.###....`.          13 sts  row 25
+  #..#..##.......        15 sts  row 24
+  #A##...#.....`.        15 sts  row 23
+ ###.#####........      17 sts  row 22
+ #`#..##.#......`.      17 sts  row 21
+#.##...###.........    19 sts  row 20
+#..#####.#.........    19 sts  row 19
+#...##.###.........    19 sts  row 18
+#....#..##.........    19 sts  row 17
+######...#.........    19 sts  row 16
+#.##.#####.........    19 sts  row 15
+#..#..##.#.........    19 sts  row 14
+#VV#...###......,,.    19 sts  row 13
+ #.#####.#........      17 sts  row 12
+ #,,##.###.....,,.      17 sts  row 11
+  #..#..##.......        15 sts  row 10
+  #VV#...#....,,.        15 sts  row 9
+   #.#####......          13 sts  row 8
+   #,,##.#...,,.          13 sts  row 7
+    #..###.....            11 sts  row 6
+    #,,.##..,,.            11 sts  row 5
+     #...#....               9 sts  row 4
+     #VV##.,,.               9 sts  row 3
+      ##.#...                 7 sts  row 2
+      .VV#.,,                 7 sts  row 1
+       ..#..                   5 sts  row 0

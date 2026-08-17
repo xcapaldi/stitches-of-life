@@ -1,0 +1,15 @@
+{
+  "name": "scarf",
+  "castOn": 31,
+  "gauge": {
+    "stitchesPerCm": 2.2,
+    "rowsPerCm": 3.0
+  },
+  "rows": [
+    {
+      "count": 24,
+      "label": "body"
+    }
+  ],
+  "bindOff": true
+}
