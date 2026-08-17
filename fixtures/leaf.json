@@ -1,0 +1,35 @@
+{
+  "name": "leaf",
+  "castOn": 5,
+  "gauge": {
+    "stitchesPerCm": 2.2,
+    "rowsPerCm": 3.0
+  },
+  "rows": [
+    {
+      "count": 14,
+      "every": 2,
+      "label": "widen",
+      "shape": {
+        "kind": "inc",
+        "count": 1,
+        "at": "both"
+      }
+    },
+    {
+      "count": 6,
+      "label": "widest point"
+    },
+    {
+      "count": 14,
+      "every": 2,
+      "label": "taper",
+      "shape": {
+        "kind": "dec",
+        "count": 1,
+        "at": "both"
+      }
+    }
+  ],
+  "bindOff": true
+}
