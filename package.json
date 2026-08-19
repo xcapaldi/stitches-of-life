@@ -1,0 +1,16 @@
+{
+  "name": "stitches-of-life",
+  "version": "0.2.0",
+  "description": "Design knitted hats by running cellular automata on the non-uniform stitch map of a hat.",
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "start": "python3 -m http.server 8080",
+    "test": "node --test \"test/*.test.js\""
+  },
+  "files": [
+    "index.html",
+    "styles.css",
+    "src/"
+  ]
+}
